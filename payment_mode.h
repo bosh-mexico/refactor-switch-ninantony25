@@ -1,8 +1,8 @@
 #pragma once
-enum class PaymentMode 
+
+class IPayment
 {
-    PayPal,
-    GooglePay,
-    CreditCard,
-    Unknown
+public:
+    virtual void process(double amount) const = 0;
+    virtual ~IPayment() = default;
 };
