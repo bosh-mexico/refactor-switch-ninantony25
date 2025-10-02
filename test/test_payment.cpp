@@ -1,70 +1,86 @@
-#include <iostream>
-#include <cassert>
+#include <gtest/gtest.h>
+#include <sstream>
+#include <string>
 #include "paypal.h"
 #include "googlepay.h"
 #include "CreditCardPayment.h"
 #include "PaymentFactory.h"
 #include "CheckoutProcessor.h"
 
-void testPayPalPayment() 
+// Helper function to capture std::cout output
+std::string captureOutput(std::function<void()> func) 
+{
+    std::stringstream buffer;
+    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+    func();
+    std::cout.rdbuf(old);
+    return buffer.str();
+}
+
+// Test PayPalPayment
+TEST(PaymentTests, PayPalProcess) 
 {
     PayPalPayment paypal;
-    std::cout << "Testing PayPalPayment..." << std::endl;
-    paypal.process(100.0);   // Expected output: Processing PayPal payment of ₹100.0...
+    std::string output = captureOutput(& { paypal.process(100.0); });
+    EXPECT_EQ(output, "Processing PayPal payment of ₹100.0...\n");
 }
 
-void testGooglePayPayment() 
+// Test GooglePayPayment
+TEST(PaymentTests, GooglePayProcess) 
 {
     GooglePayPayment gpay;
-    std::cout << "Testing GooglePayPayment..." << std::endl;
-    gpay.process(200.0);     // Expected output: Processing GooglePay payment of ₹200.0...
+    std::string output = captureOutput(& { gpay.process(200.0); });
+    EXPECT_EQ(output, "Processing GooglePay payment of ₹200.0...\n");
 }
 
-void testCreditCardPayment() 
+// Test CreditCardPayment
+TEST(PaymentTests, CreditCardProcess) 
 {
     CreditCardPayment cc;
-    std::cout << "Testing CreditCardPayment..." << std::endl;
-    cc.process(300.0);       // Expected output: Processing CreditCard payment of ₹300.0...
+    std::string output = captureOutput(& { cc.process(300.0); });
+    EXPECT_EQ(output, "Processing CreditCard payment of ₹300.0...\n");
 }
 
-void testPaymentFactory() 
+// Test PaymentFactory valid modes
+TEST(PaymentFactoryTests, ValidModes) 
 {
-    std::cout << "Testing PaymentFactory..." << std::endl;
-
     auto paypal = PaymentFactory::createPayment("PayPal");
-    assert(paypal != nullptr);
-    paypal->process(150.0);
-
+    EXPECT_NE(paypal, nullptr);
     auto gpay = PaymentFactory::createPayment("GooglePay");
-    assert(gpay != nullptr);
-    gpay->process(250.0);
-
+    EXPECT_NE(gpay, nullptr);
     auto cc = PaymentFactory::createPayment("CreditCard");
-    assert(cc != nullptr);
-    cc->process(350.0);
+    EXPECT_NE(cc, nullptr);
+}
 
+// Test PaymentFactory invalid mode
+TEST(PaymentFactoryTests, InvalidMode) 
+{
     auto invalid = PaymentFactory::createPayment("Bitcoin");
-    assert(invalid == nullptr);
+    EXPECT_EQ(invalid, nullptr);
 }
 
-void testCheckoutProcessor() 
+// Test CheckoutProcessor with valid and invalid modes
+TEST(CheckoutProcessorTests, CheckoutFlow) 
 {
-    std::cout << "Testing CheckoutProcessor..." << std::endl;
     CheckoutProcessor processor;
-    processor.checkout("PayPal", 500.0);
-    processor.checkout("GooglePay", 600.0);
-    processor.checkout("CreditCard", 700.0);
-    processor.checkout("Bitcoin", 800.0); // Expected error message
+
+    std::string output1 = captureOutput(& { processor.checkout("PayPal", 500.0); });
+    EXPECT_EQ(output1, "Processing PayPal payment of ₹500.0...\n");
+
+    std::string output2 = captureOutput(& { processor.checkout("GooglePay", 600.0); });
+    EXPECT_EQ(output2, "Processing GooglePay payment of ₹600.0...\n");
+
+    std::string output3 = captureOutput([ { processor.checkout("CreditCard", 700.0); });
+    EXPECT_EQ(output3, "Processing CreditCard payment of ₹700.0...\n");
+
+    std::string output4 = captureOutput(& { processor.checkout("Bitcoin", 800.0); });
+    EXPECT_EQ(output4, "Error: Unsupported or invalid payment mode.\n");
 }
 
-int main()
+// Main function for running all tests
+int main(int argc, char **argv) 
 {
-    testPayPalPayment();
-    testGooglePayPayment();
-    testCreditCardPayment();
-    testPaymentFactory();
-    testCheckoutProcessor();
-
-    std::cout << "All tests completed." << std::endl;
-    return 0;
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
+
