@@ -1,4 +1,4 @@
-#include "googlePay.h"
+#include "googlepay.h"
 #include <iostream>
 void GooglePayPayment::process(double amount) const 
 {
